@@ -49,7 +49,8 @@ Before building you will need OpenCL to be installed, on Ubuntu this can be achi
 some examples are below:
 ```
 > cd rust-fil-proofs/sha2raw
-> cargo bench compress256_benchmark
+> cargo build --release --bench compress256
+> ./compress256xxxx --bench
 打印出测试信息如下：
 compress256_benchmark/128                                                                           
                         time:   [288.39 ns 288.56 ns 288.91 ns]
