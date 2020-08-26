@@ -17,16 +17,18 @@ impl Implementation {
         #[cfg(target_arch = "x86_64")]
         {
             if let Some(sha_impl) = Self::sha_if_supported() {
+                println!(" x86_64");
                 return sha_impl;
             }
         }
         #[cfg(feature = "asm")]
         {
             if let Some(asm_impl) = Self::asm_if_supported() {
+                println!(" asm");
                 return asm_impl;
             }
         }
-
+        println!(" portable");
         Self::portable()
     }
 

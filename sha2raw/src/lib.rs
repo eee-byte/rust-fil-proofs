@@ -5,9 +5,9 @@
 #![deny(clippy::all, clippy::perf, clippy::correctness)]
 #![allow(clippy::unreadable_literal)]
 
-mod consts;
+pub mod consts;
 
-mod platform;
+pub mod platform;
 mod sha256;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod sha256_intrinsics;
