@@ -7,6 +7,13 @@ use std::io::{self, Read};
 use std::time::Duration;
 use sha2raw::sha256_intrinsics;
 
+use sha2raw::consts::H256;
+use sha2raw::platform::Implementation;
+
+lazy_static::lazy_static! {
+    static ref IMPL: Implementation = Implementation::detect();
+}
+
 fn compress256(sha: &mut Sha256) {
     let rng = &mut XorShiftRng::from_seed([
         0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
@@ -17,8 +24,9 @@ fn compress256(sha: &mut Sha256) {
     rng.fill_bytes(&mut input);
     let chunked = input.chunks(32).collect::<Vec<_>>();
 
-    //sha.len += (chunked.len() as u64) << 8;
-    unsafe { sha256_intrinsics::compress256(&mut sha.state, &chunked) };
+    sha.len += (chunked.len() as u64) << 8;
+    //unsafe { sha256_intrinsics::compress256(&mut sha.state, &chunked) };
+    IMPL.compress256(&mut sha.state, &chunked);
 }
 
 fn compress256_benchmark(c: &mut Criterion) {
