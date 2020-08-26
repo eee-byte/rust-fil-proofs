@@ -24,7 +24,7 @@ fn compress256(sha: &mut Sha256) {
     rng.fill_bytes(&mut input);
     let chunked = input.chunks(32).collect::<Vec<_>>();
 
-    //sha.len += (chunked.len() as u64) << 8;
+    sha.len += (chunked.len() as u64) << 8;
     //unsafe { sha256_intrinsics::compress256(&mut sha.state, &chunked) };
     IMPL.compress256(&mut sha.state, &chunked);
 }
