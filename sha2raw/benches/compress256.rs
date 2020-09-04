@@ -5,7 +5,7 @@ use rand_xorshift::XorShiftRng;
 use sha2raw::Sha256;
 use std::io::{self, Read};
 use std::time::Duration;
-use sha2raw::sha256_intrinsics;
+use sha2raw;
 
 use sha2raw::consts::H256;
 use sha2raw::platform::Implementation;
@@ -15,18 +15,29 @@ lazy_static::lazy_static! {
 }
 
 fn compress256(sha: &mut Sha256) {
+    let mut buffer = [0u8; 32];
+    let porep_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
     let rng = &mut XorShiftRng::from_seed([
         0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
         0xe5,
     ]);
 
-    let mut input = vec![0u8; 64];
-    rng.fill_bytes(&mut input);
-    let chunked = input.chunks(32).collect::<Vec<_>>();
+    let mut rng_input = vec![0u8; 448];
+    rng.fill_bytes(&mut rng_input);
+    let chunked = rng_input.chunks(32).collect::<Vec<_>>();
+    //println!("chunked:{:?} len:{:?}", chunked.as_slice(), chunked.len());
 
-    sha.len += (chunked.len() as u64) << 8;
+    buffer[0..4].copy_from_slice(&u32::from('3').to_be_bytes());
+    buffer[4..12].copy_from_slice(&u64::from(22u32).to_be_bytes());
+    sha.input(&[AsRef::<[u8]>::as_ref(&porep_id), &buffer[..]][..]);
+
+    sha.input(chunked.as_slice());
+    sha.input(chunked.as_slice());
+    sha.input(&chunked.as_slice()[..8]);
+    let out = sha.finish_with(&chunked.as_slice()[8]);
+    //println!("out:{:?}, len:{:?}", out, out.len());
     //unsafe { sha256_intrinsics::compress256(&mut sha.state, &chunked) };
-    IMPL.compress256(&mut sha.state, &chunked);
+    //IMPL.compress256(&mut sha.state, &chunked);
 }
 
 fn compress256_benchmark(c: &mut Criterion) {
