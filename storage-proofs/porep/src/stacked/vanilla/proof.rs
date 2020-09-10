@@ -3,7 +3,7 @@ use std::io::Write;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc, RwLock};
-
+use std::{thread, time};
 use bincode::deserialize;
 use generic_array::typenum::{self, Unsigned};
 use log::{info, trace};
@@ -317,6 +317,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             }
 
             if layer == 1 {
+                info!("layer {} graph.size(): {}", layer, graph.size());
                 for node in 0..graph.size() {
                     create_label(
                         graph,
@@ -328,6 +329,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
                     )?;
                 }
             } else {
+                info!("layer {} graph.size(): {}", layer, graph.size());
                 for node in 0..graph.size() {
                     create_label_exp(
                         graph,
@@ -886,7 +888,6 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
 
             let mut start = 0;
             let mut end = size / tree_count;
-
             for (i, config) in configs.iter().enumerate() {
                 let encoded_data = last_layer_labels
                     .read_range(start..end)?
@@ -901,8 +902,9 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
                                 .expect("try from bytes failed");
                         let encoded_node =
                             encode::<<Tree::Hasher as Hasher>::Domain>(key, data_node);
-                        data_node_bytes.copy_from_slice(AsRef::<[u8]>::as_ref(&encoded_node));
 
+                        data_node_bytes.copy_from_slice(AsRef::<[u8]>::as_ref(&encoded_node));
+                        //info!("encoded_node ------------cpu------------- :{:?}", encoded_node);
                         encoded_node
                     });
 
@@ -917,7 +919,6 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
                 end += size / tree_count;
             }
         };
-
         create_lc_tree::<LCTree<Tree::Hasher, Tree::Arity, Tree::SubTreeArity, Tree::TopTreeArity>>(
             tree_r_last_config.size.unwrap(),
             &configs,
@@ -1060,7 +1061,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             _ => panic!("Unsupported column arity"),
         };
         info!("tree_c done");
-
+        info!("using existing original  data.len() :{:?}", data.len());
         // Build the MerkleTree over the original data (if needed).
         let tree_d = match data_tree {
             Some(t) => {

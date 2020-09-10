@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion, ParameterizedBenchmark, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, ParameterizedBenchmark, Throughput};
 use rand::{thread_rng, Rng};
 use rand::{RngCore, SeedableRng};
 use rand_xorshift::XorShiftRng;
@@ -14,9 +14,13 @@ lazy_static::lazy_static! {
     static ref IMPL: Implementation = Implementation::detect();
 }
 
-fn compress256(sha: &mut Sha256) {
+fn compress256(sha: &mut Sha256, data: u32) -> [u8; 32] {
+    let porep_id = [data as u8, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+        9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2];
+
     let rng = &mut XorShiftRng::from_seed([
-        0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
+        data as u8, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x33, 0x84, 0x12, 0xdf, 0x37, 0x32, 0x54, 0x06, 0xbc,
         0xe5,
     ]);
 
@@ -25,8 +29,19 @@ fn compress256(sha: &mut Sha256) {
     let chunked = input.chunks(32).collect::<Vec<_>>();
 
     sha.len += (chunked.len() as u64) << 8;
-    //unsafe { sha256_intrinsics::compress256(&mut sha.state, &chunked) };
-    IMPL.compress256(&mut sha.state, &chunked);
+    let mut rng_input = vec![0u8; 448];
+    //  rng.fill_bytes(&mut rng_input);
+    let chunked = rng_input.chunks(32).collect::<Vec<_>>();
+    let porep_id = porep_id.chunks(32).collect::<Vec<_>>();
+    //println!("chunked:{:?} len:{:?}", chunked.as_slice(), chunked.len());
+    sha.input( porep_id.as_slice());
+
+    sha.input(chunked.as_slice());
+    sha.input(chunked.as_slice());
+    sha.input(&chunked.as_slice()[..8]);
+    //println!("sha.len:{:?}", sha.len);
+    sha.finish_with(&chunked.as_slice()[8])
+    //println!("out:{:?}, len:{:?}", out, out.len());
 }
 
 fn compress256_benchmark(c: &mut Criterion) {
@@ -36,9 +51,13 @@ fn compress256_benchmark(c: &mut Criterion) {
             "compress256_benchmark",
             |b, size| {
                 let mut sha = Sha256::new();
-                b.iter(|| compress256(&mut sha))
+                b.iter(|| black_box(
+                    {
+                        let out =  compress256(&mut sha, H256[4]);
+                        compress256(&mut sha, out[9] as u32)
+                    }));
             },
-            vec![128, 256, 1_024_000],
+            vec![10],
             //vec![128, 256, 512, 256_000, 512_000, 1_024_000, 2_048_000],
         )
             .sample_size(10)

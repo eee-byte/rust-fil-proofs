@@ -7,7 +7,7 @@ lazy_static::lazy_static! {
     static ref IMPL: Implementation = Implementation::detect();
 }
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Sha256 {
     pub len: u64,
     pub state: [u32; 8],

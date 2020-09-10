@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{ensure, Context, Result};
 use bincode::deserialize;
-use log::info;
+use log::{info, trace};
 use merkletree::store::{DiskStore, LevelCacheStore, StoreConfig};
 use storage_proofs::cache_key::CacheKey;
 use storage_proofs::hasher::Hasher;
@@ -201,7 +201,7 @@ pub fn generate_piece_commitment<T: std::io::Read>(
     source: T,
     piece_size: UnpaddedBytesAmount,
 ) -> Result<PieceInfo> {
-    info!("generate_piece_commitment:start");
+    trace!("generate_piece_commitment:start");
 
     let result = measure_op(Operation::GeneratePieceCommitment, || {
         ensure_piece_size(piece_size)?;
@@ -218,7 +218,7 @@ pub fn generate_piece_commitment<T: std::io::Read>(
         PieceInfo::new(commitment, piece_size)
     });
 
-    info!("generate_piece_commitment:finish");
+    trace!("generate_piece_commitment:finish");
     result
 }
 

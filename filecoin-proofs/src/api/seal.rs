@@ -87,6 +87,11 @@ where
             out_path.as_ref().display()
         )
     })?;
+    info!(
+        " copy in_path={:?} to out_path={:?}",
+        in_path.as_ref().display(),
+        out_path.as_ref().display()
+    );
 
     let f_data = OpenOptions::new()
         .read(true)
@@ -276,6 +281,7 @@ where
         StackedDrg<Tree, DefaultPieceHasher>,
         _,
     >>::setup(&compound_setup_params)?;
+    println!("replica_path :{:?}", replica_path.as_ref().display());
 
     let (tau, (p_aux, t_aux)) = StackedDrg::<Tree, DefaultPieceHasher>::replicate_phase2(
         &compound_public_params.vanilla_params,

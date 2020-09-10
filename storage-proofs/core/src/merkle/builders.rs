@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use anyhow::{ensure, Result};
 use generic_array::typenum::{self, Unsigned};
-use log::trace;
+use log::{trace, info};
 use merkletree::merkle;
 use merkletree::merkle::{
     get_merkle_tree_leafs, is_merkle_tree_size_valid, FromIndexedParallelIterator,
@@ -53,6 +53,8 @@ pub fn create_lc_tree<Tree: MerkleTreeTrait>(
     replica_config: &ReplicaConfig,
 ) -> Result<LCTree<Tree::Hasher, Tree::Arity, Tree::SubTreeArity, Tree::TopTreeArity>> {
     let base_tree_leafs = get_merkle_tree_leafs(base_tree_len, Tree::Arity::to_usize())?;
+    info!("Tree::TopTreeArity::to_usize():{:?}", Tree::TopTreeArity::to_usize());
+    info!("Tree::SubTreeArity::to_usize() :{:?}", Tree::SubTreeArity::to_usize());
 
     if Tree::TopTreeArity::to_usize() > 0 {
         ensure!(
