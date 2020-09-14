@@ -177,7 +177,7 @@ where
         comm_d,
         &porep_config.porep_id,
     );
-
+    info!("replica_id:{:?}" ,replica_id);
     let labels = StackedDrg::<Tree, DefaultPieceHasher>::replicate_phase1(
         &compound_public_params.vanilla_params,
         &replica_id,
@@ -387,7 +387,7 @@ pub fn seal_commit_phase1<T: AsRef<Path>, Tree: 'static + MerkleTreeTrait>(
         comm_d_safe,
         &porep_config.porep_id,
     );
-
+    println!("replica_id:{:?}", replica_id);
     let public_inputs = stacked::PublicInputs {
         replica_id,
         tau: Some(stacked::Tau {
