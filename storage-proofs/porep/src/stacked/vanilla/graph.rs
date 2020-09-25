@@ -68,7 +68,7 @@ fn prefetch(parents: &[u32], data: &[u8]) {
 }
 
 #[inline]
-fn read_node<'a>(i: usize, parents: &[u32], data: &'a [u8]) -> &'a [u8] {
+pub fn read_node<'a>(i: usize, parents: &[u32], data: &'a [u8]) -> &'a [u8] {
     let start = parents[i] as usize * NODE_SIZE;
     let end = start + NODE_SIZE;
     &data[start..end]
@@ -207,7 +207,10 @@ where
             read_node(12, cache_parents, exp_data),
             read_node(13, cache_parents, exp_data),
         ];
-
+        // println!("base_data:{:x?}", base_data);
+        // println!("cache_parents:{:x?}", cache_parents);
+        // println!("parents:{:x?}", parents);
+        // panic!("======================");
         // round 1 (14)
         hasher.input(&parents);
 
@@ -218,7 +221,48 @@ where
         hasher.input(&parents[..8]);
         hasher.finish_with(&parents[8])
     }
+/*
+    pub fn copy_parents_data_mmap_exp(
+        &self,
+        base_data: &[u8],
+        exp_data: &[u8],
+        mut hasher: Sha256,
+    ) -> [u8; 32] {
+        // prefetch(&cache_parents[..BASE_DEGREE], base_data);
+        // prefetch(&cache_parents[BASE_DEGREE..], exp_data);
 
+        // fill buffer
+        let parents = [
+            base_data[0],
+            base_data[1],
+            base_data[2],
+            base_data[3],
+            base_data[4],
+            base_data[5],
+            exp_data[0],
+            exp_data[1],
+            exp_data[2],
+            exp_data[3],
+            exp_data[4],
+            exp_data[5],
+            exp_data[6],
+            exp_data[7],
+        ];
+        // println!("base_data:{:x?}", base_data);
+        // println!("cache_parents:{:x?}", cache_parents);
+        // println!("parents:{:x?}", parents);
+        // panic!("======================");
+        // round 1 (14)
+        hasher.input(&parents);
+
+        // round 2 (14)
+        hasher.input(&parents);
+
+        // round 3 (9)
+        hasher.input(&parents[..8]);
+        hasher.finish_with(&parents[8])
+    }
+*/
     fn copy_parents_data_inner(
         &self,
         cache_parents: &[u32],
@@ -236,7 +280,9 @@ where
             read_node(4, cache_parents, base_data),
             read_node(5, cache_parents, base_data),
         ];
-
+        // println!("base_data:{:x?}", base_data);
+        // println!("cache_parents:{:x?}", cache_parents);
+        // println!("parents:{:x?}", parents);
         // round 1 (0..6)
         hasher.input(&parents);
 

@@ -14,6 +14,7 @@ mod params;
 mod porep;
 mod proof;
 mod proof_scheme;
+mod lable_cache;
 
 pub use self::challenges::{ChallengeRequirements, LayerChallenges};
 pub use self::column::Column;

@@ -179,7 +179,7 @@ fn main() -> Result<()> {
     let skip_commit_phase1 = false;
     let skip_commit_phase2 = false;
     let cache_dir = String::from("./bench-cache");
-    let sector_size = 2 * 1024;
+    let sector_size = 32 * 1024 * 1024 * 1024;
 
     window_post::run(
         sector_size,

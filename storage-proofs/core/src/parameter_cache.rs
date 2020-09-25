@@ -260,7 +260,7 @@ where
     }
 }
 
-fn ensure_parent(path: &PathBuf) -> Result<()> {
+pub fn ensure_parent(path: &PathBuf) -> Result<()> {
     match path.parent() {
         Some(dir) => {
             create_dir_all(dir)?;

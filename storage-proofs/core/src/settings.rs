@@ -29,6 +29,8 @@ pub struct Settings {
     pub parameter_cache: String,
     pub parent_cache: String,
     pub use_fil_blst: bool,
+    pub use_lable_cache: bool,
+    pub lable_cache: String,
 }
 
 impl Default for Settings {
@@ -50,6 +52,8 @@ impl Default for Settings {
             parameter_cache: "/var/tmp/filecoin-proof-parameters/".to_string(),
             parent_cache: cache("filecoin-parents"),
             use_fil_blst: false,
+            use_lable_cache: false,
+            lable_cache: cache("filecoin-lable-exp-cache"),
         }
     }
 }

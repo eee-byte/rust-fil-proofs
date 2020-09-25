@@ -104,6 +104,9 @@ where
     use std::any::Any;
 
     let base_tree_leafs = get_base_tree_leafs::<Tree>(base_tree_len)?;
+    info!("base_tree_leafs {}", base_tree_leafs);
+    info!("configs.len() {}", configs.len());
+    info!("base_tree_len {}", base_tree_len);
     let mut trees = Vec::with_capacity(configs.len());
     for i in 0..configs.len() {
         let mut store = Tree::Store::new_with_config(
@@ -111,6 +114,7 @@ where
             Tree::Arity::to_usize(),
             configs[i].clone(),
         )?;
+        info!("configs[i].clone().path {:?}", configs[i].clone().path.display());
         if let Some(lc_store) = Any::downcast_mut::<
             merkletree::store::LevelCacheStore<<Tree::Hasher as Hasher>::Domain, std::fs::File>,
         >(&mut store)
@@ -121,6 +125,7 @@ where
             );
             let replica_config = replica_config.expect("replica config failure");
             lc_store.set_external_reader(ExternalReader::new_from_config(&replica_config, i)?)?;
+            info!("replica_config.path {:?}", replica_config.path.display());
         }
 
         if configs.len() == 1 {

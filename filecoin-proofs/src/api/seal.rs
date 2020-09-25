@@ -178,6 +178,7 @@ where
         &porep_config.porep_id,
     );
     info!("replica_id:{:?}" ,replica_id);
+
     let labels = StackedDrg::<Tree, DefaultPieceHasher>::replicate_phase1(
         &compound_public_params.vanilla_params,
         &replica_id,
@@ -387,7 +388,7 @@ pub fn seal_commit_phase1<T: AsRef<Path>, Tree: 'static + MerkleTreeTrait>(
         comm_d_safe,
         &porep_config.porep_id,
     );
-    println!("replica_id:{:?}", replica_id);
+
     let public_inputs = stacked::PublicInputs {
         replica_id,
         tau: Some(stacked::Tau {
@@ -509,7 +510,7 @@ pub fn seal_commit_phase2<Tree: 'static + MerkleTreeTrait>(
         &groth_params,
         compound_public_params.priority,
     )?;
-    info!("snark_proof:finish");
+    info!("snark_proof:finish groth_proofs.len:{:?}", groth_proofs.len());
 
     let proof = MultiProof::new(groth_proofs, &groth_params.vk);
 

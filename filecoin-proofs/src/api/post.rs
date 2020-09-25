@@ -146,6 +146,7 @@ impl<Tree: 'static + MerkleTreeTrait> PrivateReplicaInfo<Tree> {
         >,
     > {
         let base_tree_size = get_base_tree_size::<Tree>(sector_size)?;
+
         let base_tree_leafs = get_base_tree_leafs::<Tree>(base_tree_size)?;
         trace!(
             "post: base tree size {}, base tree leafs {}, rows_to_discard {}, arities [{}, {}, {}]",

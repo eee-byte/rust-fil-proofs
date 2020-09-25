@@ -17,7 +17,7 @@ use rayon::prelude::*;
 use storage_proofs_core::{
     cache_key::CacheKey,
     data::Data,
-    drgraph::Graph,
+    drgraph::{Graph, BASE_DEGREE},
     error::Result,
     hasher::{Domain, HashFunction, Hasher, PoseidonArity},
     measurements::{
@@ -34,13 +34,14 @@ use super::{
     challenges::LayerChallenges,
     column::Column,
     create_label, create_label_exp,
-    graph::StackedBucketGraph,
+    graph::{StackedBucketGraph, read_node},
     hash::hash_single_column,
     params::{
         get_node, Labels, LabelsCache, PersistentAux, Proof, PublicInputs, PublicParams,
         ReplicaColumnProof, Tau, TemporaryAux, TemporaryAuxCache, TransformedLayers, BINARY_ARITY,
     },
     EncodingProof, LabelingProof,
+    lable_cache::LableCache,
 };
 
 use ff::Field;
@@ -52,6 +53,8 @@ use storage_proofs_core::fr32::fr_into_bytes;
 
 use crate::encode::{decode, encode};
 use crate::PoRep;
+use hex;
+use crate::stacked::vanilla::graph::EXP_DEGREE;
 
 pub const TOTAL_PARENTS: usize = 37;
 
@@ -316,6 +319,25 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             None
         };
 
+        let use_lable_mmap = settings::SETTINGS
+            .lock()
+            .expect("use_lable_cache settings lock failure")
+            .use_lable_cache;
+
+        let mut lable_cache = if use_lable_mmap {
+            let lable_cache = settings::SETTINGS
+                .lock()
+                .expect("lable_cache settings lock failure")
+                .lable_cache
+                .clone();
+            let mut cache= PathBuf::new();
+            cache.push(lable_cache);
+            Some(LableCache::generate(cache, (layer_size*EXP_DEGREE) as u64)?)
+        } else {
+            None
+        };
+
+
         for layer in 1..=layers {
             info!("generating layer: {}", layer);
             if let Some(ref mut cache) = cache {
@@ -335,18 +357,18 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
                     )?;
                 }
             } else {
-                info!("layer {} graph.size(): {}", layer, graph.size());
-                for node in 0..graph.size() {
-                    create_label_exp(
-                        graph,
-                        cache.as_mut(),
-                        replica_id,
-                        &exp_labels,
-                        &mut layer_labels,
-                        layer,
-                        node,
-                    )?;
-                }
+                    for node in 0..graph.size() {
+                        create_label_exp(
+                            graph,
+                            cache.as_mut(),
+                            replica_id,
+                            &exp_labels,
+                            &mut layer_labels,
+                            layer,
+                            node,
+                        )?;
+                    }
+
             }
 
             // Write the result to disk to avoid keeping it in memory all the time.
@@ -368,7 +390,38 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             );
 
             info!("  setting exp parents");
-            std::mem::swap(&mut layer_labels, &mut exp_labels);
+            if use_lable_mmap {
+                if let Some(ref mut exp_mmap) = lable_cache {
+                    info!("  Cache extended data");
+                    exp_mmap.shfit(0);
+                    let mut parents  = [0u8; 1024*1024*1024];
+                    let mut pos = 0;
+                    for  node in 0..graph.size() {
+                        if let Some(ref mut cache) = cache {
+                            let cache_parents = cache.read(node as u32)?;
+                            let (base_parents, exp_parents) = cache_parents.split_at(BASE_DEGREE);
+                            (0..8).into_iter().enumerate().map(|(i, _)| {
+                                let parent = read_node(i as usize, base_parents,&mut layer_labels);
+                                //parent.into_iter().enumerate().map(|p| parents.push(*p));
+                                let start = (pos * NODE_SIZE * EXP_DEGREE) + (i * NODE_SIZE);
+                                let end = start + NODE_SIZE;
+                                parents[start..end].copy_from_slice(parent)
+                            });
+                            if pos % 4194304 == 0 {
+                                exp_mmap.update_cache_file(&parents)?;
+                                pos = 0
+                            } else {
+                                pos += 1
+                            }
+                        }
+                    }
+
+                }
+            } else {
+                std::mem::swap(&mut layer_labels, &mut exp_labels);
+            }
+
+            //layer_labels.copy_within(..layer_size, layer_size);
 
             // Track the layer specific store and StoreConfig for later retrieval.
             labels.push(layer_store);
