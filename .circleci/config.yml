@@ -154,6 +154,33 @@ jobs:
             RUST_TEST_THREADS: 1
             FIL_PROOFS_USE_FIL_BLST: true
 
+  # Running with `use_multicore_sdr=true` should be integrated directly into the test code. For now we
+  # just re-run the lifecycle tests to exercise the use_multicore_sdr code path with that setting set.
+  test_multicore_sdr:
+    docker:
+      - image: filecoin/rust:latest
+    working_directory: /mnt/crate
+    resource_class: 2xlarge+
+    steps:
+      - configure_environment_variables
+      - checkout
+      - attach_workspace:
+          at: "."
+      - restore_cache:
+          keys:
+            - cargo-v28-{{ checksum "rust-toolchain" }}-{{ checksum "Cargo.toml" }}-{{ checksum "Cargo.lock" }}-{{ arch }}
+      - restore_parameter_cache
+      - run:
+          name: Test with use_multicore_sdr enabled
+          command: |
+            ulimit -n 20000
+            ulimit -u 20000
+            ulimit -n 20000
+            cargo +$(cat rust-toolchain) test --verbose --release -- --ignored lifecycle
+          environment:
+            RUST_TEST_THREADS: 1
+            FIL_PROOFS_USE_MULTICORE_SDR: true
+
   bench:
     docker:
       - image: filecoin/rust:latest
@@ -220,13 +247,13 @@ jobs:
       - run:
           name: Run Winning PoST benchmarks using 512MiB sectors
           command: |
-            ./fil-proofs-tooling/scripts/run-remote.sh "${CIRCLE_BRANCH}" "${BENCHMARK_SERVER_SSH_USERNAME}@${BENCHMARK_SERVER_IP_ADDR}" ./fil-proofs-tooling/scripts/benchy.sh winning-post --size=$((512*1024)) > winning-post-benchmarks.json
+            ./fil-proofs-tooling/scripts/run-remote.sh "${CIRCLE_BRANCH}" "${BENCHMARK_SERVER_SSH_USERNAME}@${BENCHMARK_SERVER_IP_ADDR}" ./fil-proofs-tooling/scripts/benchy.sh winning-post --size=512MiB > winning-post-benchmarks.json
             cat winning-post-benchmarks.json
           no_output_timeout: 60m
       - run:
           name: Run Window PoST benchmarks using a 512MiB sector
           command: |
-            ./fil-proofs-tooling/scripts/run-remote.sh "${CIRCLE_BRANCH}" "${BENCHMARK_SERVER_SSH_USERNAME}@${BENCHMARK_SERVER_IP_ADDR}" ./fil-proofs-tooling/scripts/benchy.sh window-post --size=$((512*1024)) > window-post-benchmarks.json
+            ./fil-proofs-tooling/scripts/run-remote.sh "${CIRCLE_BRANCH}" "${BENCHMARK_SERVER_SSH_USERNAME}@${BENCHMARK_SERVER_IP_ADDR}" ./fil-proofs-tooling/scripts/benchy.sh window-post --size=512MiB > window-post-benchmarks.json
             cat window-post-benchmarks.json
           no_output_timeout: 60m
       - run:
@@ -379,6 +406,10 @@ workflows:
             - cargo_fetch
             - ensure_groth_parameters_and_keys_linux
       - test_fil_blst:
+          requires:
+            - cargo_fetch
+            - ensure_groth_parameters_and_keys_linux
+      - test_multicore_sdr:
           requires:
             - cargo_fetch
             - ensure_groth_parameters_and_keys_linux
