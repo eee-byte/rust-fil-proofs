@@ -97,6 +97,7 @@ unsafe impl Sync for RingBuf {}
 impl RingBuf {
     /// Creates a new
     pub fn new(slot_size: usize, num_slots: usize) -> Self {
+        // length = 512 * 800
         let data = vec![0u8; slot_size * num_slots].into_boxed_slice();
 
         RingBuf {
@@ -117,7 +118,7 @@ impl RingBuf {
 
     #[allow(clippy::mut_from_ref)]
     pub unsafe fn slot_mut(&self, slot: usize) -> &mut [u8] {
-        let start = self.slot_size * slot;
+        let start = self.slot_size * slot; //slot = 0..800 slot_size=512
         let end = start + self.slot_size;
 
         &mut self.slice_mut()[start..end]

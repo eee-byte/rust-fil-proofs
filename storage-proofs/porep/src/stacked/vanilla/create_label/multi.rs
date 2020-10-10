@@ -135,8 +135,8 @@ fn create_label_runner(
     cur_consumer: &AtomicU64,
     cur_producer: &AtomicU64,
     cur_awaiting: &AtomicU64,
-    stride: u64,
-    lookahead: u64,
+    stride: u64,        // 128
+    lookahead: u64,     // 800
     ring_buf: &RingBuf,
     base_parent_missing: &UnsafeSlice<BitMask>,
 ) -> Result<()> {
@@ -165,11 +165,17 @@ fn create_label_runner(
             let cur_slot = (cur_node - 1) % lookahead;
 
             // Don't overrun the buffer
+            // The current node information to be filled must be less than the node being computed + the leading quantity 800
             while cur_node > (cur_consumer.load(SeqCst) + lookahead - 1) {
                 std::thread::sleep(std::time::Duration::from_micros(10));
             }
 
+            // Because there can only be one rust variable reference,
+            // in order for multiple threads in a multithreaded process to share and modify the same BUF (array),
+            // the underlying layer requires a complex series of transformations that make it
+            // possible for multiple threads to modify the BUF
             let buf = unsafe { ring_buf.slot_mut(cur_slot as usize) };
+
             let bpm = unsafe { base_parent_missing.get_mut(cur_slot as usize) };
 
             let pc = parents_cache.slice_at(cur_node as usize * DEGREE as usize, cur_consumer);
@@ -294,7 +300,7 @@ fn create_layer_labels(
         // Calculate nodes 1 to n
         cur_consumer.store(1, SeqCst);
         let mut i = 1;
-        while i < num_nodes {
+        while i < num_nodes { //1..1G
             // Ensure next buffer is ready
             let mut printed = false;
             let mut producer_val = cur_producer.load(SeqCst);

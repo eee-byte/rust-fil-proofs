@@ -25,7 +25,7 @@ unsafe impl<T> Sync for CacheReader<T> {}
 
 impl<T: FromByteSlice> CacheReader<T> {
     pub fn new(filename: &PathBuf, window_size: Option<usize>, degree: usize) -> Result<Self> {
-        info!("initializing cache");
+        info!("initializing cache -- filename ：{:?}" , filename.display());
         let file = File::open(filename)?;
         let size = File::metadata(&file)?.len() as usize;
         let window_size = match window_size {
