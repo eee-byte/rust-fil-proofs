@@ -70,9 +70,9 @@ impl Sha256 {
         // Write L as 64 big endian integer
         let l = self.len + 256;
         block1[32 - 8..].copy_from_slice(&l.to_be_bytes()[..]);
-        println!("block0:{:x?}", block0);
-        println!("block1:{:x?}", block1);
-        println!("data: {:x?}", &[block0, &block1[..]][..]);
+        // println!("block0:{:x?}", block0);
+        // println!("block1:{:x?}", block1);
+        // println!("data: {:x?}", &[block0, &block1[..]][..]);
         IMPL.compress256(&mut self.state, &[block0, &block1[..]][..]);
 
         let mut out = [0u8; 32];

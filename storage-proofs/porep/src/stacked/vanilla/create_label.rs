@@ -4,7 +4,7 @@ use storage_proofs_core::{
     hasher::Hasher,
     util::{data_at_node_offset, NODE_SIZE},
 };
-
+use storage_proofs_core::hasher::types::Domain;
 use super::{cache::ParentCache, graph::StackedBucketGraph};
 
 pub fn create_label<H: Hasher>(
@@ -56,6 +56,34 @@ pub fn create_label_exp<H: Hasher>(
     let mut hasher = Sha256::new();
     let mut buffer = [0u8; 32];
 
+    if node<256{
+        println!("\nthenode[k].layer     ={};", layer_index);
+        print!("thenode[k].layerid    ={} ", "{");
+        println!("8'h{:x?} {}", layer_index, "};");
+
+        print!("thenode[k].repid    ={} ", "{");
+        for (n, id) in replica_id.into_bytes().iter().enumerate() {
+            if n == replica_id.into_bytes().len()-1 {
+                println!("8'h{:x?} {}", id, "};");
+            } else {
+                print!("8'h{:x?}, ", id);
+            }
+        }
+
+        print!("thenode[k].nodeid    ={} ", "{");
+        println!("32'h{:08x?} {}", node, "};");
+
+        print!("thenode[k].state    ={} ", "{");
+        for (i, st) in hasher.state.iter().enumerate() {
+            if i == 7 {
+                println!("32'h{:08x?} {}", st, "};");
+            }
+            else {
+                print!("32'h{:08x?}, ", st);
+            }
+        }
+    }
+
     buffer[0..4].copy_from_slice(&(layer_index as u32).to_be_bytes());
     buffer[4..12].copy_from_slice(&(node as u64).to_be_bytes());
     hasher.input(&[AsRef::<[u8]>::as_ref(replica_id), &buffer[..]][..]);
@@ -78,6 +106,18 @@ pub fn create_label_exp<H: Hasher>(
 
     // strip last two bits, to ensure result is in Fr.
     layer_labels[end - 1] &= 0b0011_1111;
+
+    if node <256 {
+        print!("thenode[k].nodeout ={}", "{ ");
+        for n in 0..32 {
+            if n == 31 {
+                println!("8'h{:x?} {}", hash[n], "};");
+            } else {
+                print!("8'h{:x?}, ", hash[n]);
+            }
+        }
+        println!("\n");
+    }
 
     Ok(())
 }

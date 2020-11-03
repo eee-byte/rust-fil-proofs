@@ -151,13 +151,23 @@ where
     ) -> Result<[u8; 32]> {
         if let Some(ref mut cache) = cache {
             let cache_parents = cache.read(node as u32)?;
-            Ok(self.copy_parents_data_inner_exp(&cache_parents, base_data, exp_data, hasher))
+            if node <256 {
+                for k in 0..BASE_DEGREE {
+                    if cache_parents[k] == cache_parents[BASE_DEGREE-1]{
+                        println!("thenode[k].baseindex[{}] = 32'hffffffff;", k);
+                    } else {
+                        println!("thenode[k].baseindex[{}] = 32'h{:08x?};", k, cache_parents[k]);
+                    }
+                }
+            }
+
+            Ok(self.copy_parents_data_inner_exp(&cache_parents, base_data, exp_data, hasher, node))
         } else {
             let mut cache_parents = [0u32; DEGREE];
 
             self.parents(node as usize, &mut cache_parents[..])
                 .expect("parents failure");
-            Ok(self.copy_parents_data_inner_exp(&cache_parents, base_data, exp_data, hasher))
+            Ok(self.copy_parents_data_inner_exp(&cache_parents, base_data, exp_data, hasher, node))
         }
     }
 
@@ -186,6 +196,7 @@ where
         base_data: &[u8],
         exp_data: &[u8],
         mut hasher: Sha256,
+        node: u32,
     ) -> [u8; 32] {
         prefetch(&cache_parents[..BASE_DEGREE], base_data);
         prefetch(&cache_parents[BASE_DEGREE..], exp_data);
@@ -207,6 +218,19 @@ where
             read_node(12, cache_parents, exp_data),
             read_node(13, cache_parents, exp_data),
         ];
+        if node < 256 {
+            for i in 0..14 {
+                print!("thenode[k].nodein[{}] ={}", i, "{ ");
+                for (m, d) in parents[i].iter().enumerate() {
+                    if m == parents[i].len()-1 {
+                        println!("8'h{:x?} {}", d,"};");
+                    } else {
+                        print!("8'h{:x?}, ", d);
+                    }
+                }
+            }
+        }
+
 
         // round 1 (14)
         hasher.input(&parents);
